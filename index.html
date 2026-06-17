@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dialogue Storyboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --border: #dddbd4;
+    --border2: #c8c6be;
+    --text: #1a1a18;
+    --text2: #5a5a56;
+    --text3: #909088;
+    --accent: #534AB7;
+    --accent-light: #EEEDFE;
+    --teal: #0F6E56;
+    --teal-light: #E1F5EE;
+    --coral: #993C1D;
+    --coral-light: #FAECE7;
+    --radius: 10px;
+    --shadow: 0 1px 4px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.06);
+  }
+
+  body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Toolbar ── */
+  #toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap; }
+  #toolbar h1 { font-size: 14px; font-weight: 600; margin-right: 6px; }
+  .sep { width: 1px; height: 22px; background: var(--border); margin: 0 2px; }
+  .btn { padding: 5px 12px; font-size: 13px; border-radius: 7px; border: 1px solid var(--border2); cursor: pointer; font-family: inherit; background: var(--surface); color: var(--text); white-space: nowrap; }
+  .btn:hover { background: var(--bg); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: transparent; }
+  .btn-primary:hover { opacity: .88; background: var(--accent); }
+  .btn-sm { padding: 3px 9px; font-size: 12px; }
+  #toast { font-size: 12px; color: var(--teal); margin-left: 4px; opacity: 0; transition: opacity .3s; }
+  #toast.show { opacity: 1; }
+  #stat-names-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  #stat-names-row label { font-size: 11px; color: var(--text3); }
+  .stat-name-input { width: 72px; padding: 3px 6px; font-size: 12px; border: 1px solid var(--border); border-radius: 5px; font-family: inherit; background: var(--bg); color: var(--text); }
+
+  /* ── Main area ── */
+  #main { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── Canvas ── */
+  #canvas-wrap { flex: 1; overflow: auto; position: relative; }
+  #canvas { position: relative; min-width: 2400px; min-height: 1600px; }
+  #canvas-bg { position: absolute; inset: 0; background-image: radial-gradient(circle, #c8c6be 1px, transparent 1px); background-size: 24px 24px; pointer-events: none; }
+
+  /* ── Edges SVG ── */
+  #edges-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  .edge { stroke: #b4b2a9; stroke-width: 2; fill: none; marker-end: url(#arr); }
+  .edge-label { font-size: 11px; fill: #888; font-family: system-ui, sans-serif; }
+
+  /* ── Nodes ── */
+  .node { position: absolute; width: 220px; border-radius: var(--radius); box-shadow: var(--shadow); cursor: default; user-select: none; background: var(--surface); border: 1.5px solid var(--border); transition: box-shadow .15s; }
+  .node:hover { box-shadow: 0 2px 12px rgba(0,0,0,.12), 0 0 0 1px rgba(0,0,0,.08); }
+  .node.selected { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(83,74,183,.18); }
+  .node-npc  { border-color: #AFA9EC; }
+  .node-player { border-color: #5DCAA5; }
+  .node-end  { border-color: #F0997B; }
+
+  .node-header { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px 5px; border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0; cursor: move; }
+  .node-npc    .node-header { background: var(--accent-light); }
+  .node-player .node-header { background: var(--teal-light); }
+  .node-end    .node-header { background: var(--coral-light); }
+
+  .node-type-badge { font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+  .node-npc    .node-type-badge { color: var(--accent); }
+  .node-player .node-type-badge { color: var(--teal); }
+  .node-end    .node-type-badge { color: var(--coral); }
+
+  .node-id { font-size: 10px; color: var(--text3); }
+  .node-del { font-size: 14px; color: var(--text3); cursor: pointer; line-height: 1; padding: 0 2px; border: none; background: none; }
+  .node-del:hover { color: #c0392b; }
+
+  .node-body { padding: 8px 10px 10px; }
+  .node-speaker { font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 3px; }
+  .node-text { font-size: 13px; color: var(--text); line-height: 1.5; word-break: break-word; min-height: 18px; }
+  .node-text em { color: var(--text3); font-style: italic; }
+
+  /* stat bars */
+  .stat-bars { margin-top: 8px; display: flex; flex-direction: column; gap: 3px; }
+  .stat-row { display: flex; align-items: center; gap: 5px; }
+  .stat-label { font-size: 10px; color: var(--text3); width: 66px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .stat-bar-track { flex: 1; height: 5px; background: #eee; border-radius: 3px; overflow: hidden; }
+  .stat-bar-fill { height: 100%; border-radius: 3px; transition: width .2s; }
+  .stat-pct { font-size: 10px; color: var(--text3); width: 26px; text-align: right; flex-shrink: 0; }
+
+  .node-connect-btn { display: block; width: 100%; padding: 4px; font-size: 11px; border: none; border-top: 1px solid var(--border); background: none; color: var(--text3); cursor: pointer; border-radius: 0 0 calc(var(--radius)-1px) calc(var(--radius)-1px); }
+  .node-connect-btn:hover { background: var(--bg); color: var(--text); }
+  .connecting .node-connect-btn { background: #fffbe6; color: #b8860b; }
+
+  /* ── Side panel ── */
+  #panel { width: 280px; flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; }
+  #panel-inner { padding: 14px; flex: 1; }
+  #panel h2 { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--text2); }
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: 11px; color: var(--text3); margin-bottom: 3px; }
+  .field input, .field textarea, .field select { width: 100%; padding: 5px 8px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; background: var(--bg); color: var(--text); }
+  .field textarea { resize: vertical; min-height: 64px; line-height: 1.5; }
+  .field select { cursor: pointer; }
+
+  .stat-editor { margin-top: 12px; }
+  .stat-editor h3 { font-size: 11px; color: var(--text3); margin-bottom: 8px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+  .stat-edit-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .stat-edit-row .sname { font-size: 12px; color: var(--text2); width: 80px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .stat-edit-row input[type=range] { flex: 1; accent-color: var(--accent); }
+  .stat-edit-row .sval { font-size: 12px; color: var(--text3); width: 28px; text-align: right; }
+
+  .panel-actions { display: flex; gap: 6px; margin-top: 14px; }
+
+  #no-selection { color: var(--text3); font-size: 13px; line-height: 1.6; }
+
+  /* stat bar colors */
+  .sbar-0 { background: #534AB7; }
+  .sbar-1 { background: #0F6E56; }
+  .sbar-2 { background: #993C1D; }
+  .sbar-3 { background: #BA7517; }
+  .sbar-4 { background: #185FA5; }
+  .sbar-5 { background: #639922; }
+  .sbar-6 { background: #D4537E; }
+  .sbar-7 { background: #888780; }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <h1>Dialogue Storyboard</h1>
+  <div class="sep"></div>
+  <button class="btn btn-primary" onclick="addNode('npc')">+ NPC node</button>
+  <button class="btn" onclick="addNode('player')">+ Player choice</button>
+  <button class="btn" onclick="addNode('end')">+ End / outcome</button>
+  <div class="sep"></div>
+  <button class="btn" onclick="saveJSON()">💾 Save JSON</button>
+  <button class="btn" onclick="document.getElementById('load-input').click()">📂 Load JSON</button>
+  <input type="file" id="load-input" accept=".json" style="display:none" onchange="loadJSON(event)">
+  <div class="sep"></div>
+  <button class="btn" onclick="exportPNG()">🖼 Export PNG</button>
+  <div class="sep"></div>
+  <div id="stat-names-row">
+    <label>Stat names:</label>
+  </div>
+  <span id="toast"></span>
+</div>
+
+<div id="main">
+  <div id="canvas-wrap">
+    <div id="canvas">
+      <div id="canvas-bg"></div>
+      <svg id="edges-svg">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#b4b2a9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+  </div>
+
+  <div id="panel">
+    <div id="panel-inner">
+      <div id="no-selection">
+        <p>Select a node to edit it.</p>
+        <p style="margin-top:8px">Drag nodes to reposition. Use "Connect" on a node to draw an edge to another.</p>
+      </div>
+      <div id="node-form" style="display:none">
+        <h2 id="form-title">Edit node</h2>
+        <div class="field">
+          <label>Type</label>
+          <select id="f-type" onchange="updateSelected('type', this.value)">
+            <option value="npc">NPC dialogue</option>
+            <option value="player">Player choice</option>
+            <option value="end">End / outcome</option>
+          </select>
+        </div>
+        <div class="field" id="f-speaker-wrap">
+          <label>Speaker</label>
+          <input id="f-speaker" type="text" placeholder="e.g. Guard" oninput="updateSelected('speaker', this.value)">
+        </div>
+        <div class="field">
+          <label>Text</label>
+          <textarea id="f-text" oninput="updateSelected('text', this.value)"></textarea>
+        </div>
+        <div class="field">
+          <label>Notes (storyboard only)</label>
+          <textarea id="f-notes" placeholder="Director notes, conditions, flags..." oninput="updateSelected('notes', this.value)" style="min-height:48px"></textarea>
+        </div>
+        <div class="stat-editor">
+          <h3>Stat weights</h3>
+          <div id="stat-sliders"></div>
+        </div>
+        <div class="panel-actions">
+          <button class="btn btn-sm" onclick="deleteSelected()" style="color:#c0392b;border-color:#e0b0b0">Delete node</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let statNames = ['Persuasion','Intimidation','Charm','Deception','Insight','Bravery','Wisdom','Luck'];
+let nodes = {};
+let edges = []; // [{from, to}]
+let selectedId = null;
+let connectingFrom = null;
+let idCounter = 1;
+const genId = () => 'n' + (idCounter++);
+
+// ── Stat name inputs in toolbar ──────────────────────────────────────────────
+function buildStatNameInputs() {
+  const row = document.getElementById('stat-names-row');
+  row.innerHTML = '<label>Stat names:</label>';
+  statNames.forEach((name, i) => {
+    const inp = document.createElement('input');
+    inp.className = 'stat-name-input';
+    inp.value = name;
+    inp.title = 'Stat ' + (i+1);
+    inp.oninput = () => {
+      statNames[i] = inp.value || ('Stat'+(i+1));
+      renderAllNodes();
+      if (selectedId) renderPanel(selectedId);
+    };
+    row.appendChild(inp);
+  });
+}
+
+// ── Node creation ────────────────────────────────────────────────────────────
+function addNode(type, x, y) {
+  const id = genId();
+  const wrap = document.getElementById('canvas-wrap');
+  const cx = wrap.scrollLeft + wrap.clientWidth / 2;
+  const cy = wrap.scrollTop  + wrap.clientHeight / 2;
+  nodes[id] = {
+    id, type,
+    speaker: type === 'npc' ? 'NPC' : '',
+    text: type === 'end' ? 'End' : 'New node...',
+    notes: '',
+    stats: Array(8).fill(0),
+    x: x !== undefined ? x : Math.round(cx - 110 + (Math.random()-0.5)*80),
+    y: y !== undefined ? y : Math.round(cy - 80 + (Math.random()-0.5)*60),
+  };
+  renderNode(id);
+  selectNode(id);
+  renderEdges();
+  return id;
+}
+
+// ── Render a node DOM element ─────────────────────────────────────────────────
+function renderNode(id) {
+  const n = nodes[id];
+  let el = document.getElementById('node-' + id);
+  const isNew = !el;
+  if (isNew) {
+    el = document.createElement('div');
+    el.id = 'node-' + id;
+    el.className = 'node node-' + n.type;
+    document.getElementById('canvas').appendChild(el);
+  } else {
+    el.className = 'node node-' + n.type + (selectedId === id ? ' selected' : '');
+  }
+  el.style.left = n.x + 'px';
+  el.style.top  = n.y + 'px';
+
+  const typeLabel = n.type === 'npc' ? 'NPC' : n.type === 'player' ? 'Player' : 'End';
+  const statsHTML = statNames.map((sname, i) => {
+    const pct = n.stats[i] || 0;
+    if (pct === 0) return '';
+    return `<div class="stat-row">
+      <span class="stat-label">${esc(sname)}</span>
+      <div class="stat-bar-track"><div class="stat-bar-fill sbar-${i}" style="width:${pct}%"></div></div>
+      <span class="stat-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="node-header" onmousedown="startDrag(event,'${id}')">
+      <span class="node-type-badge">${typeLabel}</span>
+      <span class="node-id">${id}</span>
+      <button class="node-del" onclick="deleteNode('${id}')" title="Delete">×</button>
+    </div>
+    <div class="node-body" onclick="selectNode('${id}')">
+      ${n.speaker ? `<div class="node-speaker">${esc(n.speaker)}</div>` : ''}
+      <div class="node-text">${n.text ? esc(n.text) : '<em>Empty</em>'}</div>
+      ${statsHTML ? `<div class="stat-bars">${statsHTML}</div>` : ''}
+      ${n.notes ? `<div style="margin-top:6px;font-size:11px;color:#888;font-style:italic;border-top:1px solid #eee;padding-top:5px">${esc(n.notes)}</div>` : ''}
+    </div>
+    <button class="node-connect-btn" onclick="toggleConnect('${id}')">⟶ Connect to...</button>
+  `;
+
+  if (selectedId === id) el.classList.add('selected');
+}
+
+function renderAllNodes() {
+  Object.keys(nodes).forEach(renderNode);
+}
+
+// ── Edges ────────────────────────────────────────────────────────────────────
+function renderEdges() {
+  const svg = document.getElementById('edges-svg');
+  let paths = '';
+  edges.forEach(e => {
+    const a = nodes[e.from], b = nodes[e.to];
+    if (!a || !b) return;
+    const x1 = a.x + 110, y1 = a.y + 80;
+    const x2 = b.x + 110, y2 = b.y;
+    const cy = (y1 + y2) / 2;
+    paths += `<path class="edge" d="M${x1} ${y1} C${x1} ${cy} ${x2} ${cy} ${x2} ${y2}"/>`;
+  });
+  svg.innerHTML = `<defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#b4b2a9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>` + paths;
+}
+
+// ── Drag ─────────────────────────────────────────────────────────────────────
+let dragging = null, dragOX = 0, dragOY = 0;
+function startDrag(e, id) {
+  if (e.button !== 0) return;
+  dragging = id;
+  const n = nodes[id];
+  const wrap = document.getElementById('canvas-wrap');
+  dragOX = e.clientX + wrap.scrollLeft - n.x;
+  dragOY = e.clientY + wrap.scrollTop  - n.y;
+  e.preventDefault();
+}
+document.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const wrap = document.getElementById('canvas-wrap');
+  nodes[dragging].x = Math.max(0, e.clientX + wrap.scrollLeft - dragOX);
+  nodes[dragging].y = Math.max(0, e.clientY + wrap.scrollTop  - dragOY);
+  renderNode(dragging);
+  renderEdges();
+});
+document.addEventListener('mouseup', () => { dragging = null; });
+
+// ── Connect ───────────────────────────────────────────────────────────────────
+function toggleConnect(id) {
+  if (connectingFrom === null) {
+    connectingFrom = id;
+    document.getElementById('canvas').classList.add('connecting');
+    showToast('Now click another node to connect');
+  } else if (connectingFrom === id) {
+    connectingFrom = null;
+    document.getElementById('canvas').classList.remove('connecting');
+  } else {
+    const from = connectingFrom, to = id;
+    if (!edges.find(e => e.from === from && e.to === to)) {
+      edges.push({ from, to });
+      renderEdges();
+    }
+    connectingFrom = null;
+    document.getElementById('canvas').classList.remove('connecting');
+    showToast('Connected!');
+  }
+}
+
+// ── Select ───────────────────────────────────────────────────────────────────
+function selectNode(id) {
+  if (connectingFrom !== null && connectingFrom !== id) {
+    toggleConnect(id); return;
+  }
+  const prev = selectedId;
+  selectedId = id;
+  if (prev && nodes[prev]) renderNode(prev);
+  if (nodes[id]) renderNode(id);
+  renderPanel(id);
+}
+
+document.getElementById('canvas-wrap').addEventListener('click', e => {
+  if (e.target === document.getElementById('canvas') || e.target === document.getElementById('canvas-bg')) {
+    selectedId = null;
+    document.querySelectorAll('.node').forEach(n => n.classList.remove('selected'));
+    document.getElementById('node-form').style.display = 'none';
+    document.getElementById('no-selection').style.display = '';
+  }
+});
+
+// ── Panel ─────────────────────────────────────────────────────────────────────
+function renderPanel(id) {
+  const n = nodes[id]; if (!n) return;
+  document.getElementById('no-selection').style.display = 'none';
+  document.getElementById('node-form').style.display = '';
+  document.getElementById('form-title').textContent = 'Node ' + id;
+  document.getElementById('f-type').value = n.type;
+  document.getElementById('f-speaker-wrap').style.display = n.type === 'npc' ? '' : 'none';
+  document.getElementById('f-speaker').value = n.speaker || '';
+  document.getElementById('f-text').value = n.text || '';
+  document.getElementById('f-notes').value = n.notes || '';
+
+  const sliders = document.getElementById('stat-sliders');
+  sliders.innerHTML = statNames.map((sname, i) => `
+    <div class="stat-edit-row">
+      <span class="sname" title="${esc(sname)}">${esc(sname)}</span>
+      <input type="range" min="0" max="100" value="${n.stats[i]||0}"
+        oninput="updateStat('${id}',${i},this.value);this.nextElementSibling.textContent=this.value+'%'">
+      <span class="sval">${n.stats[i]||0}%</span>
+    </div>
+  `).join('');
+}
+
+function updateSelected(key, val) {
+  if (!selectedId || !nodes[selectedId]) return;
+  nodes[selectedId][key] = val;
+  if (key === 'type') {
+    document.getElementById('f-speaker-wrap').style.display = val === 'npc' ? '' : 'none';
+  }
+  renderNode(selectedId);
+}
+
+function updateStat(id, i, val) {
+  nodes[id].stats[i] = parseInt(val);
+  renderNode(id);
+}
+
+function deleteSelected() { if (selectedId) deleteNode(selectedId); }
+function deleteNode(id) {
+  edges = edges.filter(e => e.from !== id && e.to !== id);
+  const el = document.getElementById('node-' + id);
+  if (el) el.remove();
+  delete nodes[id];
+  if (selectedId === id) {
+    selectedId = null;
+    document.getElementById('node-form').style.display = 'none';
+    document.getElementById('no-selection').style.display = '';
+  }
+  renderEdges();
+}
+
+// ── Save / Load ───────────────────────────────────────────────────────────────
+function saveJSON() {
+  const data = JSON.stringify({ version: 2, statNames, nodes, edges }, null, 2);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+  a.download = 'dialogue_storyboard.json';
+  a.click();
+  showToast('Saved!');
+}
+
+function loadJSON(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.statNames) {
+        statNames = data.statNames;
+        buildStatNameInputs();
+      }
+      nodes = data.nodes || {};
+      edges = data.edges || [];
+      idCounter = Math.max(1, ...Object.keys(nodes).map(k => parseInt(k.replace('n',''))+1).filter(n=>!isNaN(n)));
+      document.querySelectorAll('.node').forEach(n => n.remove());
+      Object.keys(nodes).forEach(renderNode);
+      renderEdges();
+      selectedId = null;
+      document.getElementById('node-form').style.display = 'none';
+      document.getElementById('no-selection').style.display = '';
+      showToast('Loaded ' + file.name);
+    } catch { showToast('Error loading file'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ── Export PNG ────────────────────────────────────────────────────────────────
+function exportPNG() {
+  showToast('Rendering...');
+  const canvas = document.getElementById('canvas');
+  html2canvas(canvas, {
+    backgroundColor: '#f5f4f0',
+    scale: 1.5,
+    useCORS: true,
+    scrollX: 0, scrollY: 0,
+    width: canvas.scrollWidth,
+    height: canvas.scrollHeight,
+    windowWidth: canvas.scrollWidth,
+    windowHeight: canvas.scrollHeight,
+  }).then(c => {
+    const a = document.createElement('a');
+    a.download = 'dialogue_storyboard.png';
+    a.href = c.toDataURL('image/png');
+    a.click();
+    showToast('PNG saved!');
+  }).catch(() => showToast('PNG export failed'));
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+buildStatNameInputs();
+
+// Starter example
+const r = addNode('npc', 200, 100);
+nodes[r].speaker = 'Guard';
+nodes[r].text = 'Halt! State your business.';
+nodes[r].stats = [20, 60, 10, 0, 30, 50, 20, 10];
+renderNode(r);
+
+const c1 = addNode('player', 60, 280);
+nodes[c1].text = "I'm a merchant.";
+nodes[c1].stats = [70, 0, 40, 20, 0, 10, 30, 0];
+renderNode(c1);
+
+const c2 = addNode('player', 310, 280);
+nodes[c2].text = "None of your business.";
+nodes[c2].stats = [0, 80, 10, 30, 0, 70, 0, 5];
+renderNode(c2);
+
+const r1 = addNode('npc', 60, 460);
+nodes[r1].speaker = 'Guard';
+nodes[r1].text = 'Move along then.';
+nodes[r1].stats = [0,0,0,0,0,0,0,0];
+renderNode(r1);
+
+const r2 = addNode('npc', 310, 460);
+nodes[r2].speaker = 'Guard';
+nodes[r2].text = "Bold words. I'll be watching you.";
+nodes[r2].stats = [0, 40, 0, 0, 20, 30, 0, 0];
+renderNode(r2);
+
+const e1 = addNode('end', 310, 620);
+nodes[e1].text = 'Tension +1 flag set';
+nodes[e1].stats = [0,0,0,0,0,0,0,0];
+renderNode(e1);
+
+edges.push({ from:r, to:c1 }, { from:r, to:c2 }, { from:c1, to:r1 }, { from:c2, to:r2 }, { from:r2, to:e1 });
+renderEdges();
+selectedId = null;
+document.getElementById('node-form').style.display = 'none';
+document.getElementById('no-selection').style.display = '';
+</script>
+</body>
+</html>
