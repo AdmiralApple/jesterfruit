@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NeoToronto — 3097</title>
+  <meta name="description" content="Cinematic cyberpunk-fantasy: an isometric tactics RPG where identity forms through action. Four planes, eight voices, a city that doesn't care." />
+  <style>
+    :root{
+      --bg:#04050a;
+      --muted:#9aa3b2;
+      --neon-cyan:#00f5ff;
+      --neon-mag:#ff2e88;
+      --panel-grad: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      color-scheme: dark;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{min-height:100%}
+    body{
+      background:
+        radial-gradient(1200px 600px at 10% 10%, rgba(0,245,255,0.04), transparent 8%),
+        radial-gradient(900px 400px at 90% 90%, rgba(255,46,136,0.03), transparent 10%),
+        var(--bg);
+      color:#e9eef6;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    .page{
+      max-width:1200px;
+      margin:0 auto;
+      padding:32px 20px 40px;
+    }
+
+    @media (min-width:1024px){
+      .page{padding:48px 24px 56px;}
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns:1.2fr 0.9fr;
+      gap:28px;
+      align-items:flex-start;
+    }
+
+    @media (max-width:900px){
+      .layout{
+        grid-template-columns:1fr;
+      }
+    }
+
+    .hero{
+      background:var(--panel-grad);
+      border:1px solid rgba(255,255,255,0.04);
+      border-radius:14px;
+      padding:28px 24px 24px;
+      box-shadow:0 10px 40px rgba(0,0,0,0.6);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .accent-orb{
+      position:absolute;
+      right:-10%;
+      top:-20%;
+      width:420px;
+      height:420px;
+      filter:blur(48px);
+      opacity:0.12;
+      background:conic-gradient(from 120deg, rgba(0,245,255,0.18), rgba(255,46,136,0.18), transparent 60%);
+      transform:rotate(12deg);
+      pointer-events:none;
+    }
+
+    .eyebrow{
+      font-size:12px;
+      letter-spacing:0.18em;
+      color:var(--muted);
+      text-transform:uppercase;
+      margin-bottom:8px;
+    }
+
+    h1{
+      font-size:clamp(26px,4vw,40px);
+      margin:4px 0 10px;
+      line-height:1.05;
+      letter-spacing:0.01em;
+    }
+
+    h1 .glitch{
+      display:inline-block;
+      padding:0 6px;
+      border-radius:6px;
+      color:var(--neon-cyan);
+      background:linear-gradient(90deg, rgba(0,245,255,0.06), rgba(255,46,136,0.04));
+      text-shadow:0 0 18px rgba(0,245,255,0.12);
+      animation:flicker 3s infinite;
+    }
+
+    @keyframes flicker {
+      0% { opacity:1; transform:translateY(0) }
+      10% { opacity:0.92; transform:translateY(-0.6px) }
+      20% { opacity:1; transform:translateY(0) }
+      30% { opacity:0.95; transform:translateY(0.3px) }
+      100% { opacity:1; transform:translateY(0) }
+    }
+
+    p.lead{
+      color:#cfe7f2;
+      max-width:36rem;
+      margin-bottom:18px;
+      font-size:0.98rem;
+      line-height:1.55;
+    }
+
+    .cta{
+      display:flex;
+      gap:12px;
+      margin-top:16px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      padding:11px 18px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.06);
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      color:inherit;
+      cursor:pointer;
+      font-weight:700;
+      letter-spacing:0.08em;
+      text-transform:uppercase;
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      font-size:0.8rem;
+    }
+
+    .btn.primary{
+      box-shadow:0 6px 30px rgba(0,245,255,0.06);
+      border-color:rgba(0,245,255,0.18);
+    }
+
+    .accent-line{
+      height:2px;
+      border-radius:2px;
+      background:linear-gradient(90deg,var(--neon-cyan),var(--neon-mag));
+      margin:18px 0 14px;
+      opacity:0.12;
+    }
+
+    .hero-foot{
+      margin-top:4px;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .side{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    .panel{
+      background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+      border-radius:12px;
+      padding:14px 14px 16px;
+      border:1px solid rgba(255,255,255,0.03);
+    }
+
+    .panel h3{
+      margin:0 0 6px;
+      font-size:14px;
+    }
+
+    .panel p.muted{
+      margin:0 0 10px;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .planes{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:8px;
+    }
+
+    .plane{
+      padding:9px;
+      border-radius:8px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+      border:1px solid rgba(255,255,255,0.03);
+    }
+
+    .plane h4{
+      margin:0 0 4px;
+      font-size:11px;
+      text-transform:uppercase;
+      color:var(--muted);
+      letter-spacing:0.12em;
+    }
+
+    .plane p{
+      margin:0;
+      color:#cbdff0;
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    .slices{
+      display:grid;
+      gap:8px;
+      margin-top:6px;
+    }
+
+    .slice{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      padding:8px 9px;
+      border-radius:9px;
+      background:linear-gradient(90deg, rgba(0,0,0,0.12), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.02);
+    }
+
+    .slice .tag{
+      min-width:78px;
+      font-weight:800;
+      color:var(--neon-cyan);
+      font-size:11px;
+      text-transform:uppercase;
+    }
+
+    .slice p{
+      margin:0;
+      color:#dbefff;
+      font-size:12px;
+      line-height:1.4;
+    }
+
+    .muted{
+      color:var(--muted);
+      font-size:13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="layout" role="main" aria-labelledby="site-title">
+      <section class="hero" aria-labelledby="site-title">
+        <div class="accent-orb" aria-hidden="true"></div>
+
+        <div class="eyebrow">NeoToronto — 3097</div>
+
+        <h1 id="site-title">
+          You wake up in a city that remembers you wrong.
+          <span class="glitch">Reality is frayed</span>
+        </h1>
+
+        <p class="lead">
+          A cinematic isometric cyberpunk‑fantasy where identity forms through action.
+          The skyline is indifferent; the streets keep their own counsel. Choices
+          echo not as numbers but as the way the world answers.
+        </p>
+
+        <div class="cta" role="group" aria-label="primary actions">
+          <button class="btn primary" aria-label="Enter the signal">Enter the Signal</button>
+          <button class="btn" aria-label="Watch teaser">Watch the Teaser</button>
+        </div>
+
+        <div class="accent-line" aria-hidden="true"></div>
+
+        <p class="hero-foot">
+          Hardlights move like ghosts with pulse; companions are persistent, and
+          every conversation leaves a mark.
+        </p>
+      </section>
+
+      <aside class="side" aria-label="site details">
+        <section class="panel" aria-labelledby="planes-heading">
+          <h3 id="planes-heading">The Four Planes</h3>
+          <p class="muted">A metaphysical lattice beneath the city's skin. Each plane changes how the world answers you.</p>
+
+          <div class="planes" role="list">
+            <div class="plane" role="listitem" aria-labelledby="material">
+              <h4 id="material">Material</h4>
+              <p>Force and consequence — metal, muscle, and blunt truth. Actions here have immediate, visible effect.</p>
+            </div>
+
+            <div class="plane" role="listitem" aria-labelledby="digital">
+              <h4 id="digital">Digital</h4>
+              <p>Networks and permissions — systems that hum beneath the surface. Doors open for the right key and close for the wrong one.</p>
+            </div>
+
+            <div class="plane" role="listitem" aria-labelledby="gaia">
+              <h4 id="gaia">Gaia</h4>
+              <p>Living patterns and negotiated bargains — a reciprocal force that remembers deals and debts.</p>
+            </div>
+
+            <div class="plane" role="listitem" aria-labelledby="divinity">
+              <h4 id="divinity">Divinity</h4>
+              <p>Belief made consequence — ritual, conviction, and small miracles that answer to intent and meaning.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" style="margin-top:8px" aria-labelledby="slices-heading">
+          <h3 id="slices-heading">Eight Voices</h3>
+          <p class="muted">Distinct ways to move through the city. Lenses, not classes — texture and consequence, not just numbers.</p>
+
+          <div class="slices" role="list">
+            <div class="slice" role="listitem">
+              <div class="tag">Melee</div>
+              <p>Close, immediate, visceral — presence and force that the city answers to directly.</p>
+            </div>
+
+            <div class="slice" role="listitem">
+              <div class="tag">Guns</div>
+              <p>Precision and geometry; distance becomes a tool and the skyline a map of angles.</p>
+            </div>
+
+            <div class="slice" role="listitem">
+              <div class="tag">Drones</div>
+              <p>Remote presence and improvisation — machines that extend your will into the grid.</p>
+            </div>
+
+            <div class="slice" role="listitem">
+              <div class="tag">Hacking</div>
+              <p>Soft exploits and whispered permissions; infrastructure yields to the right touch.</p>
+            </div>
+
+            <div class="slice" role="listitem">
+              <div class="tag">Conviction</div>
+              <p>Belief as leverage — what you swear to becomes a tool the world can use.</p>
+            </div>
+
+            <div class="slice" role="listitem">
+              <div class="tag">Intervention</div>
+              <p>Small reality edits and uncanny aids that nudge outcomes in subtle ways.</p>
+            </div>
+
+            <div class="slice" role="listitem">
+              <div class="tag">Natural</div>
+              <p>Coaxed terrain and living cover — the city's green veins negotiated into service.</p>
+            </div>
+
+            <div class="slice" role="listitem">
+              <div class="tag">Esoteric</div>
+              <p>Perception and denial — wrongness that unravels certainty without shouting.</p>
+            </div>
+          </div>
+
+          <p class="muted" style="margin-top:10px;">These voices are lenses that shape how NeoToronto replies to you.</p>
+        </section>
+
+        <section class="panel" style="margin-top:8px" aria-labelledby="companions-heading">
+          <h3 id="companions-heading">Companions & Hardlights</h3>
+          <p class="muted">
+            Persistent allies carry their own histories. Hardlights are emergent presences —
+            luminous, fragile, and unmistakably alive. They can be friends, guides, or
+            mysteries you learn to trust.
+          </p>
+        </section>
+      </aside>
+    </div>
+  </div>
+</body>
+</html>
+
+
